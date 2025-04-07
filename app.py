@@ -68,6 +68,7 @@ def main():
                 link = upload_to_drive(img_bytes, uploaded_file.name)
                 if link:
                     st.success('Process completed...')
+                    st.markdown(f"[Open link]({link})")
                 else:
                     st.error('An error occurred while trying to upload the photo')
 
