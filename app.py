@@ -12,26 +12,35 @@ FOLDER_ID = '13W4bQZt9p4-v01Q2reeg4fA_MwUAc4yk'  # Reemplaza con tu ID de carpet
 
 @st.cache_resource  # Cachea la conexión para mejorar rendimiento
 def get_drive_service():
-    """Carga las credenciales de forma segura desde Streamlit Secrets"""
     try:
-        # Opción 1: Desde Secrets de Streamlit (producción)
-        if 'SERVICE_ACCOUNT_JSON' in st.secrets:
-            creds = service_account.Credentials.from_service_account_info(
-                st.secrets["SERVICE_ACCOUNT_JSON"],
-                scopes=SCOPES
-            )
-        # Opción 2: Desde variable de entorno (desarrollo local)
+        # Debug: Verifica si el secret existe
+        if 'SERVICE_ACCOUNT_JSON' not in st.secrets:
+            st.error("⚠️ No se encontró SERVICE_ACCOUNT_JSON en secrets")
+            st.json(st.secrets)  # Muestra todos los secrets disponibles
+            return None
+            
+        # Debug: Muestra el tipo de dato recibido
+        st.write("Tipo de dato recibido:", type(st.secrets["SERVICE_ACCOUNT_JSON"]))
+        
+        # Intenta cargar como string
+        if isinstance(st.secrets["SERVICE_ACCOUNT_JSON"], str):
+            creds_info = json.loads(st.secrets["SERVICE_ACCOUNT_JSON"])
         else:
-            import os
-            from dotenv import load_dotenv
-            load_dotenv()  # Carga .env si existe
-            creds = service_account.Credentials.from_service_account_info(
-                json.loads(os.getenv("SERVICE_ACCOUNT_JSON")),
-                scopes=SCOPES
-            )
+            creds_info = st.secrets["SERVICE_ACCOUNT_JSON"]
+            
+        # Debug: Verifica el contenido
+        st.write("Email de servicio:", creds_info.get("client_email", "No encontrado"))
+        
+        creds = service_account.Credentials.from_service_account_info(
+            creds_info,
+            scopes=SCOPES
+        )
         return build('drive', 'v3', credentials=creds)
+        
     except Exception as e:
-        st.error(f"Error cargando credenciales: {str(e)}")
+        st.error(f"Error detallado: {str(e)}")
+        st.error("Contenido recibido:")
+        st.write(st.secrets["SERVICE_ACCOUNT_JSON"])  # Muestra el contenido crudo
         return None
 
 def upload_to_drive(file_bytes, filename):
