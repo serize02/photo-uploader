@@ -12,43 +12,25 @@ FOLDER_ID = 'TU_FOLDER_ID'  # Reemplaza con tu ID de carpeta
 
 @st.cache_resource
 def get_drive_service():
+    """Obtiene el servicio de Drive sin mostrar detalles"""
     try:
         if 'SERVICE_ACCOUNT_JSON' not in st.secrets:
-            st.error("No se encontró SERVICE_ACCOUNT_JSON en los secrets")
-            return None
-        
-        # Debug: Verifica qué estamos recibiendo exactamente
-        st.write("Tipo de dato recibido:", type(st.secrets["SERVICE_ACCOUNT_JSON"]))
-        
-        # Asegurarnos de que siempre sea un diccionario
-        if isinstance(st.secrets["SERVICE_ACCOUNT_JSON"], str):
-            try:
-                creds_info = json.loads(st.secrets["SERVICE_ACCOUNT_JSON"])
-            except json.JSONDecodeError:
-                st.error("El contenido no es un JSON válido")
-                st.text("Contenido recibido:")
-                st.text(st.secrets["SERVICE_ACCOUNT_JSON"])
-                return None
-        else:
-            creds_info = st.secrets["SERVICE_ACCOUNT_JSON"]
-        
-        # Verificación adicional
-        if not isinstance(creds_info, dict):
-            st.error(f"Se esperaba un diccionario pero se recibió: {type(creds_info)}")
+            st.error("Error de configuración. Contacta al administrador.")
             return None
             
-        if "client_email" not in creds_info:
-            st.error("El JSON no contiene client_email (formato incorrecto)")
-            return None
-        
-        creds = service_account.Credentials.from_service_account_info(
-            creds_info,
-            scopes=SCOPES
+        creds_info = (
+            json.loads(st.secrets["SERVICE_ACCOUNT_JSON"]) 
+            if isinstance(st.secrets["SERVICE_ACCOUNT_JSON"], str)
+            else st.secrets["SERVICE_ACCOUNT_JSON"]
         )
-        return build('drive', 'v3', credentials=creds)
         
-    except Exception as e:
-        st.error(f"Error detallado: {str(e)}", icon="🚨")
+        return build('drive', 'v3', 
+                   credentials=service_account.Credentials.from_service_account_info(
+                       creds_info,
+                       scopes=SCOPES
+                   ))
+    except Exception:
+        st.error("Error al conectar con Google Drive")
         return None
 
 def upload_to_drive(file_bytes, filename):
