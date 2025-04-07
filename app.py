@@ -13,23 +13,33 @@ FOLDER_ID = '13W4bQZt9p4-v01Q2reeg4fA_MwUAc4yk'  # Reemplaza con tu ID de carpet
 @st.cache_resource  # Cachea la conexión para mejorar rendimiento
 def get_drive_service():
     try:
-        # Debug: Verifica si el secret existe
         if 'SERVICE_ACCOUNT_JSON' not in st.secrets:
-            st.error("⚠️ No se encontró SERVICE_ACCOUNT_JSON en secrets")
-            st.json(st.secrets)  # Muestra todos los secrets disponibles
+            st.error("No se encontró SERVICE_ACCOUNT_JSON en los secrets")
             return None
-            
-        # Debug: Muestra el tipo de dato recibido
+        
+        # Debug: Verifica qué estamos recibiendo exactamente
         st.write("Tipo de dato recibido:", type(st.secrets["SERVICE_ACCOUNT_JSON"]))
         
-        # Intenta cargar como string
+        # Asegurarnos de que siempre sea un diccionario
         if isinstance(st.secrets["SERVICE_ACCOUNT_JSON"], str):
-            creds_info = json.loads(st.secrets["SERVICE_ACCOUNT_JSON"])
+            try:
+                creds_info = json.loads(st.secrets["SERVICE_ACCOUNT_JSON"])
+            except json.JSONDecodeError:
+                st.error("El contenido no es un JSON válido")
+                st.text("Contenido recibido:")
+                st.text(st.secrets["SERVICE_ACCOUNT_JSON"])
+                return None
         else:
             creds_info = st.secrets["SERVICE_ACCOUNT_JSON"]
+        
+        # Verificación adicional
+        if not isinstance(creds_info, dict):
+            st.error(f"Se esperaba un diccionario pero se recibió: {type(creds_info)}")
+            return None
             
-        # Debug: Verifica el contenido
-        st.write("Email de servicio:", creds_info.get("client_email", "No encontrado"))
+        if "client_email" not in creds_info:
+            st.error("El JSON no contiene client_email (formato incorrecto)")
+            return None
         
         creds = service_account.Credentials.from_service_account_info(
             creds_info,
@@ -38,9 +48,7 @@ def get_drive_service():
         return build('drive', 'v3', credentials=creds)
         
     except Exception as e:
-        st.error(f"Error detallado: {str(e)}")
-        st.error("Contenido recibido:")
-        st.write(st.secrets["SERVICE_ACCOUNT_JSON"])  # Muestra el contenido crudo
+        st.error(f"Error detallado: {str(e)}", icon="🚨")
         return None
 
 def upload_to_drive(file_bytes, filename):
