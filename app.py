@@ -10,7 +10,7 @@ from googleapiclient.errors import HttpError
 
 # Configuración
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
-FOLDER_ID = 'TU_FOLDER_ID'  # Reemplaza con tu ID real
+FOLDER_ID = '13W4bQZt9p4-v01Q2reeg4fA_MwUAc4yk'  # Reemplaza con tu ID real
 
 def get_drive_service():
     """Obtiene el servicio de Drive con manejo de errores mejorado"""
